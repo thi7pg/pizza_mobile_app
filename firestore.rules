@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function orderKeysAreAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'userId',
+        'email',
+        'note',
+        'deliveryType',
+        'deliveryLabel',
+        'packingMode',
+        'packingBreakdown',
+        'boxCount',
+        'deliveryRatePerBoxKHR',
+        'deliveryFeeKHR',
+        'paymentType',
+        'paymentLabel',
+        'paymentStatus',
+        'paymentProvider',
+        'paymentAmountKHR',
+        'paymentAmountUSD',
+        'items',
+        'totalUSD',
+        'totalKHR',
+        'status',
+        'createdAt'
+      ]);
+    }
+
+    function orderCreateIsValid() {
+      return orderKeysAreAllowed()
+        && request.resource.data.userId is string
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.email is string
+        && request.resource.data.note is string
+        && request.resource.data.deliveryType is string
+        && request.resource.data.deliveryLabel is string
+        && request.resource.data.packingMode is string
+        && request.resource.data.packingBreakdown is list
+        && request.resource.data.boxCount is int
+        && request.resource.data.deliveryRatePerBoxKHR is int
+        && request.resource.data.deliveryFeeKHR is int
+        && request.resource.data.paymentType is string
+        && request.resource.data.paymentLabel is string
+        && request.resource.data.paymentStatus is string
+        && request.resource.data.paymentProvider is string
+        && request.resource.data.paymentAmountKHR is int
+        && request.resource.data.paymentAmountUSD is number
+        && request.resource.data.items is list
+        && request.resource.data.totalUSD is number
+        && request.resource.data.totalKHR is int
+        && request.resource.data.status == 'Processing';
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /customers/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if signedIn() && orderCreateIsValid();
+      allow update, delete: if isAdmin();
+    }
+  }
+}

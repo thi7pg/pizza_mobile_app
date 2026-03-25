@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
       'accent': const Color(0xFFFFB300),
     },
     {
-      'title': 'Bulk Discount',
+      'title': 'Discount',
       'subtitle': 'Get 10% off on large orders',
       'emoji': '🎉',
       'accent': const Color(0xFF34A853),
@@ -44,27 +44,28 @@ class _HomePageState extends State<HomePage> {
     {
       'name': 'នំភីហ្សា',
       'img': 'assets/products/remove/breads.png',
-      'price': '\$12.99',
-      'khr': '៛51,900រៀល',
+      'price': '\$2.50',
+      'khr': '10,100 ៛',
     },
     {
       'name': 'ឈីសដើម SH',
       'img': 'assets/products/remove/cheese_sh.png',
-      'price': '\$8.99',
-      'khr': '៛35,900រៀល',
+      'price': '\$4.20',
+      'khr': '17,000 ៛',
     },
     {
       'name': 'ឈីសឈូស SH',
       'img': 'assets/products/remove/cheese_2kg.png',
-      'price': '\$15.99',
-      'khr': '៛63,900រៀល',
+      'price': '\$8.50',
+      'khr': '34,300 ៛',
     },
     {
-      'name': 'ទឹកជ្រលក់ប៉េងប៉ោះ',
-      'img': 'assets/products/remove/tomato.png',
-      'price': '\$5.99',
-      'khr': '៛23,900រៀល',
+      'name': 'កញ្ចប់បើក',
+      'img': 'assets/products/remove/topping1.png',
+      'price': '\$3.75',
+      'khr': '15,150 ៛',
     },
+   
   ];
 
   void _openProducts() {
@@ -150,6 +151,7 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
+                    // ignore: deprecated_member_use
                     color: const Color(0xFFD62828).withOpacity(0.25),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
@@ -165,6 +167,7 @@ class _HomePageState extends State<HomePage> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: Colors.white.withOpacity(0.08),
                         shape: BoxShape.circle,
                       ),
@@ -266,6 +269,7 @@ class _HomePageState extends State<HomePage> {
                             width: 140,
                             height: 140,
                             decoration: BoxDecoration(
+                              //ignore: deprecated_member_use
                               color: (banner['accent'] as Color).withOpacity(
                                 0.24,
                               ),
@@ -457,6 +461,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
+                          // ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.06),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
@@ -494,7 +499,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            product['price'] as String,
+                            (product['price'] as String?) ?? 'ລາຄາមិនមាន',
                             style: const TextStyle(
                               color: Color(0xFFD62828),
                               fontWeight: FontWeight.w700,
@@ -502,7 +507,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           Text(
-                            product['khr'] as String,
+                            (product['khr'] as String?) ?? '',
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 11,

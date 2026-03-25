@@ -1,17 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'order_page.dart';
+import 'models/db_product.dart';
+import 'services/api_service.dart';
 
 class ProductPage extends StatefulWidget {
   final List<Map<String, dynamic>>? sharedCart;
   final VoidCallback? onCartUpdated;
+  final VoidCallback? onGoToCart;
   final VoidCallback? onGoToOrders;
 
   const ProductPage({
     super.key,
     this.sharedCart,
     this.onCartUpdated,
+    this.onGoToCart,
     this.onGoToOrders,
   });
 
@@ -26,6 +29,11 @@ class Product {
   final double priceUSD;
   final int priceKHR;
   final String category;
+  final String productType;
+  final String packingGroup;
+  final String deliveryRule;
+  final int deliveryFactor;
+  final int deliveryBoxCapacity;
 
   Product({
     required this.name,
@@ -33,74 +41,40 @@ class Product {
     required this.priceUSD,
     required this.priceKHR,
     required this.category,
+    required this.productType,
+    required this.packingGroup,
+    required this.deliveryRule,
+    required this.deliveryFactor,
+    required this.deliveryBoxCapacity,
   });
+
+  String get cartKey => [
+    name,
+    productType,
+    packingGroup,
+    deliveryRule,
+    deliveryFactor,
+    deliveryBoxCapacity,
+  ].join('|');
 }
 
 class _ProductPageState extends State<ProductPage> {
   final List<Map<String, dynamic>> _standaloneCart = [];
   final TextEditingController _searchController = TextEditingController();
+  List<Product> _dbProducts = [];
   String _searchQuery = '';
+  String _selectedCategory = 'ទាំងអស់';
+  bool _isLoading = true;
 
   List<Map<String, dynamic>> get cart => widget.sharedCart ?? _standaloneCart;
 
-  final List<Product> products = [
-    Product(
-      name: 'នំភីហ្សា size S',
-      img: 'assets/products/remove/breads.png',
-      priceUSD: 12.99,
-      priceKHR: 51900,
-      category: 'នំភីហ្សា',
-    ),
-    Product(
-      name: 'នំភីហ្សា size M',
-      img: 'assets/products/remove/breadm.png',
-      priceUSD: 10.99,
-      priceKHR: 43900,
-      category: 'នំភីហ្សា',
-    ),
-    Product(
-      name: 'នំភីហ្សា size L',
-      img: 'assets/products/remove/breadl.png',
-      priceUSD: 6.99,
-      priceKHR: 27900,
-      category: 'នំភីហ្សា',
-    ),
-    Product(
-      name: 'ឈីសដើម​ SH 2.9kg',
-      img: 'assets/products/remove/cheese_sh.png',
-      priceUSD: 8.99,
-      priceKHR: 35900,
-      category: 'ឈីស',
-    ),
-    Product(
-      name: 'ឈីសឈូស SH 2kg',
-      img: 'assets/products/remove/cheese_2kg.png',
-      priceUSD: 15.99,
-      priceKHR: 63900,
-      category: 'ឈីស',
-    ),
-    Product(
-      name: 'ម៉ាយូនេស បន្ទាយឆ្មា',
-      img: 'assets/products/remove/mayo.png',
-      priceUSD: 4.99,
-      priceKHR: 19900,
-      category: 'ម៉ាយូនេស',
-    ),
-    Product(
-      name: 'ទឹកលាបភីហ្សា (ភីហ្សាផ្សំ)',
-      img: 'assets/products/remove/pizza-sauce.png',
-      priceUSD: 3.99,
-      priceKHR: 15900,
-      category: 'ទឹកលាប&ជ្រលក់',
-    ),
-    Product(
-      name: 'ទឹកជ្រលក់ ប៉េងប៉ោះ',
-      img: 'assets/products/remove/tomato.png',
-      priceUSD: 5.99,
-      priceKHR: 23900,
-      category: 'ទឹកលាប&ជ្រលក់',
-    ),
-  ];
+  List<Product> get products => _dbProducts;
+
+  List<String> get categories {
+    final uniqueCategories = products.map((p) => p.category).toSet().toList()
+      ..sort();
+    return ['ទាំងអស់', ...uniqueCategories];
+  }
 
   List<Product> get filteredProducts {
     var list = _selectedCategory == 'ទាំងអស់'
@@ -116,32 +90,61 @@ class _ProductPageState extends State<ProductPage> {
     return list;
   }
 
-  String _selectedCategory = 'ទាំងអស់';
-  final List<String> categories = [
-    'ទាំងអស់',
-    'នំភីហ្សា',
-    'ឈីស',
-    'ម៉ាយូនេស',
-    'ទឹកលាប&ជ្រលក់',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final apiProducts = await ApiService.getProducts();
+      if (!mounted) return;
+      setState(() {
+        _dbProducts = apiProducts
+            .where((p) => p.isActive)
+            .map((p) => Product(
+                  name: p.name,
+                  img: p.image,
+                  priceUSD: p.priceUSD,
+                  priceKHR: p.priceKHR,
+                  category: p.category,
+                  productType: p.productType,
+                  packingGroup: p.packingGroup,
+                  deliveryRule: p.deliveryRule,
+                  deliveryFactor: p.deliveryFactor,
+                  deliveryBoxCapacity: p.deliveryBoxCapacity,
+                ))
+            .toList();
+      });
+    } catch (error) {
+      print('Load products error: $error');
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
 
   int _cartQtyFor(Product product) {
-    final match = cart.where((item) => item['product'].name == product.name);
-    return match.isNotEmpty ? (match.first['qty'] as int) : 0;
+    return cart.fold<int>(
+      0,
+      (totalQty, item) =>
+          totalQty +
+          (((item['product'] as Product).cartKey == product.cartKey)
+              ? ((item['qty'] as int?) ?? 0)
+              : 0),
+    );
   }
 
   int get _totalCartQty =>
       cart.fold<int>(0, (sum, item) => sum + ((item['qty'] as int?) ?? 0));
 
-  double get _totalCartUSD => cart.fold(
-    0.0,
-    (sum, item) => sum + item['product'].priceUSD * item['qty'],
-  );
-
   void _addToCart(Product product) {
     setState(() {
       final existing = cart.where(
-        (item) => item['product'].name == product.name,
+        (item) => (item['product'] as Product).cartKey == product.cartKey,
       );
       if (existing.isNotEmpty) {
         existing.first['qty']++;
@@ -155,7 +158,9 @@ class _ProductPageState extends State<ProductPage> {
   void _decreaseFromCart(Product product) {
     setState(() {
       final existing = cart
-          .where((item) => item['product'].name == product.name)
+          .where(
+            (item) => (item['product'] as Product).cartKey == product.cartKey,
+          )
           .toList();
       if (existing.isNotEmpty) {
         if (existing.first['qty'] > 1) {
@@ -233,6 +238,7 @@ class _ProductPageState extends State<ProductPage> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
+                              //ignore: deprecated_member_use
                               color: Colors.white.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(50),
                               border: Border.all(
@@ -284,6 +290,7 @@ class _ProductPageState extends State<ProductPage> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
+                            //ignore: deprecated_member_use
                             color: Colors.black.withOpacity(0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
@@ -362,6 +369,7 @@ class _ProductPageState extends State<ProductPage> {
                                 BoxShadow(
                                   color: const Color(
                                     0xFFE53935,
+                                    //ignore: deprecated_member_use
                                   ).withOpacity(0.35),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
@@ -369,6 +377,7 @@ class _ProductPageState extends State<ProductPage> {
                               ]
                             : [
                                 BoxShadow(
+                                  //ignore: deprecated_member_use
                                   color: Colors.black.withOpacity(0.05),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
@@ -451,7 +460,7 @@ class _ProductPageState extends State<ProductPage> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: 0.72,
+                          mainAxisExtent: 290,
                         ),
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
@@ -467,15 +476,6 @@ class _ProductPageState extends State<ProductPage> {
           ),
         ],
       ),
-
-      // ─── Floating cart bar ───────────────────────────────────
-      bottomSheet: totalQty > 0
-          ? _FloatingCartBar(
-              totalQty: totalQty,
-              totalUSD: _totalCartUSD,
-              onTap: () => _showCart(context),
-            )
-          : null,
     );
   }
 
@@ -572,6 +572,7 @@ class _ProductPageState extends State<ProductPage> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
+                                //ignore: deprecated_member_use
                                 color: const Color(0xFFE53935).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -598,6 +599,7 @@ class _ProductPageState extends State<ProductPage> {
                       controller: scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                       itemCount: cart.length,
+                      //ignore: unnecessary_underscores
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = cart[index];
@@ -646,6 +648,15 @@ class _ProductPageState extends State<ProductPage> {
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      product.productType,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -725,6 +736,7 @@ class _ProductPageState extends State<ProductPage> {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
+                          //ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.05),
                           blurRadius: 12,
                           offset: const Offset(0, -4),
@@ -778,60 +790,22 @@ class _ProductPageState extends State<ProductPage> {
                               elevation: 3,
                             ),
                             onPressed: () async {
-                              try {
-                                final user = FirebaseAuth.instance.currentUser;
-                                if (user == null) return;
-
-                                await FirebaseFirestore.instance
-                                    .collection('orders')
-                                    .add({
-                                      'userId': user.uid,
-                                      'email': user.email,
-                                      'items': cart
-                                          .map(
-                                            (item) => {
-                                              'name': item['product'].name,
-                                              'img': item['product'].img,
-                                              'qty': item['qty'],
-                                              'priceUSD':
-                                                  item['product'].priceUSD,
-                                              'priceKHR':
-                                                  item['product'].priceKHR,
-                                            },
-                                          )
-                                          .toList(),
-                                      'totalUSD': totalUSD,
-                                      'totalKHR': totalKHR,
-                                      'status': 'Processing',
-                                      'createdAt': FieldValue.serverTimestamp(),
-                                    });
-
-                                setState(() => cart.clear());
-                                widget.onCartUpdated?.call();
-                                Navigator.of(context).pop();
-
-                                if (widget.onGoToOrders != null) {
-                                  widget.onGoToOrders!.call();
-                                } else {
-                                  Navigator.of(parentContext).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => const OrderPage(),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(
-                                  parentContext,
-                                ).showSnackBar(
-                                  SnackBar(
-                                    content: Text('❌ Error: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                              Navigator.of(context).pop();
+                              if (widget.onGoToCart != null) {
+                                widget.onGoToCart!.call();
+                                return;
                               }
+                              ScaffoldMessenger.of(parentContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Open the Cart page to continue checkout.',
+                                  ),
+                                  backgroundColor: Color(0xFFE53935),
+                                ),
+                              );
                             },
                             child: const Text(
-                              'បញ្ជាទិញ  →',
+                              'បន្តទៅ Cart  →',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -888,6 +862,7 @@ class _ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
+            //ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.07),
             blurRadius: 16,
             offset: const Offset(0, 6),
@@ -923,6 +898,7 @@ class _ProductCard extends StatelessWidget {
                   child: Image.asset(
                     product.img,
                     fit: BoxFit.contain,
+                    //ignore: unnecessary_underscores
                     errorBuilder: (_, __, ___) => Center(
                       child: Icon(
                         Icons.image_not_supported_outlined,
@@ -938,8 +914,11 @@ class _ProductCard extends StatelessWidget {
                   left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
+                      //ignore: deprecated_member_use
                       color: Colors.white.withOpacity(0.88),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -960,13 +939,16 @@ class _ProductCard extends StatelessWidget {
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE53935),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
                             color:
+                                //ignore: deprecated_member_use
                                 const Color(0xFFE53935).withOpacity(0.4),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
@@ -992,13 +974,11 @@ class _ProductCard extends StatelessWidget {
             flex: 9,
             child: Container(
               decoration: BoxDecoration(
-                color: inCart
-                    ? const Color(0xFFFFF5F5)
-                    : Colors.white,
+                color: inCart ? const Color(0xFFFFF5F5) : Colors.white,
                 border: inCart
                     ? const Border(
-                        top: BorderSide(
-                            color: Color(0xFFE53935), width: 2))
+                        top: BorderSide(color: Color(0xFFE53935), width: 2),
+                      )
                     : null,
               ),
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -1015,6 +995,15 @@ class _ProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                       height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.productType,
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1050,7 +1039,7 @@ class _ProductCard extends StatelessWidget {
                   qtyInCart == 0
                       ? SizedBox(
                           width: double.infinity,
-                          height: 34,
+                          height: 32,
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE53935),
@@ -1062,20 +1051,20 @@ class _ProductCard extends StatelessWidget {
                               ),
                             ),
                             onPressed: onAdd,
-                            icon: const Icon(Icons.add_shopping_cart,
-                                size: 15),
+                            icon: const Icon(Icons.add_shopping_cart, size: 14),
                             label: const Text(
-                              'បន្ថែម',
+                              'ដាក់ក្នុងកន្ត្រក',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 12.5,
                               ),
                             ),
                           ),
                         )
                       : Container(
-                          height: 34,
+                          height: 32,
                           decoration: BoxDecoration(
+                            //ignore: deprecated_member_use
                             color: const Color(0xFFE53935).withOpacity(0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -1085,8 +1074,8 @@ class _ProductCard extends StatelessWidget {
                               GestureDetector(
                                 onTap: onDecrease,
                                 child: Container(
-                                  width: 34,
-                                  height: 34,
+                                  width: 32,
+                                  height: 32,
                                   decoration: const BoxDecoration(
                                     color: Color(0xFFE53935),
                                     borderRadius: BorderRadius.only(
@@ -1098,7 +1087,7 @@ class _ProductCard extends StatelessWidget {
                                     qtyInCart == 1
                                         ? Icons.delete_outline
                                         : Icons.remove,
-                                    size: 16,
+                                    size: 15,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -1120,8 +1109,8 @@ class _ProductCard extends StatelessWidget {
                               GestureDetector(
                                 onTap: onAdd,
                                 child: Container(
-                                  width: 34,
-                                  height: 34,
+                                  width: 32,
+                                  height: 32,
                                   decoration: const BoxDecoration(
                                     color: Color(0xFFE53935),
                                     borderRadius: BorderRadius.only(
@@ -1131,7 +1120,7 @@ class _ProductCard extends StatelessWidget {
                                   ),
                                   child: const Icon(
                                     Icons.add,
-                                    size: 16,
+                                    size: 15,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -1175,77 +1164,6 @@ class _QtyButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, size: 16, color: color),
-      ),
-    );
-  }
-}
-
-// ─── Floating cart bar ──────────────────────────────────────────────
-class _FloatingCartBar extends StatelessWidget {
-  final int totalQty;
-  final double totalUSD;
-  final VoidCallback onTap;
-
-  const _FloatingCartBar({
-    required this.totalQty,
-    required this.totalUSD,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFE53935).withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '$totalQty ទំនិញ',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '\$${totalUSD.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white70,
-              size: 14,
-            ),
-          ],
-        ),
       ),
     );
   }

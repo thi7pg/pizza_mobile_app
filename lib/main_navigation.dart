@@ -17,10 +17,7 @@ class MainNavigationState extends State<MainNavigation> {
   late int _currentIndex;
   final List<Map<String, dynamic>> _cart = [];
 
-  int get _cartQtyCount => _cart.fold<int>(
-    0,
-    (sum, item) => sum + ((item['qty'] as int?) ?? 0),
-  );
+  int get _cartProductCount => _cart.length;
 
   @override
   void initState() {
@@ -38,13 +35,13 @@ class MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final int cartQtyCount = _cartQtyCount;
-
-    final List<Widget> pages = [
+    final int cartProductCount = _cartProductCount;
+    final pages = [
       const HomePage(),
       ProductPage(
         sharedCart: _cart,
         onCartUpdated: _refreshCart,
+        onGoToCart: () => switchTab(2),
         onGoToOrders: () => switchTab(3),
       ),
       CartPage(
@@ -58,7 +55,7 @@ class MainNavigationState extends State<MainNavigation> {
     ];
 
     return Scaffold(
-      body: pages[_currentIndex],
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -70,19 +67,19 @@ class MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
-            label: 'Home',
+            label: 'ទំព័រដើម',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_bag_outlined),
             activeIcon: Icon(Icons.shopping_bag),
-            label: 'Products',
+            label: 'ទំនិញ',
           ),
           BottomNavigationBarItem(
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
                 const Icon(Icons.shopping_cart_outlined),
-                if (cartQtyCount > 0)
+                if (cartProductCount > 0)
                   Positioned(
                     right: -8,
                     top: -6,
@@ -96,7 +93,7 @@ class MainNavigationState extends State<MainNavigation> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '$cartQtyCount',
+                        '$cartProductCount',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -111,7 +108,7 @@ class MainNavigationState extends State<MainNavigation> {
               clipBehavior: Clip.none,
               children: [
                 const Icon(Icons.shopping_cart),
-                if (cartQtyCount > 0)
+                if (cartProductCount > 0)
                   Positioned(
                     right: -8,
                     top: -6,
@@ -125,7 +122,7 @@ class MainNavigationState extends State<MainNavigation> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '$cartQtyCount',
+                        '$cartProductCount',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -136,17 +133,17 @@ class MainNavigationState extends State<MainNavigation> {
                   ),
               ],
             ),
-            label: 'Cart',
+            label: 'កន្រ្តកទំនិញ',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long_outlined),
             activeIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
+            label: 'វិក័យប័ត្រ',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            label: 'គណនី',
           ),
         ],
       ),

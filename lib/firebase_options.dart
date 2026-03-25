@@ -1,42 +1,36 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'dart:io' show Platform;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) return web;
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return android;
-      case TargetPlatform.iOS:
-        return ios;
-      default:
-        return web;
+    if (Platform.isAndroid) {
+      return android;
     }
+    if (Platform.isIOS) {
+      return ios;
+    }
+    throw UnsupportedError(
+      'DefaultFirebaseOptions are not supported for this platform.',
+    );
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCDVjiNd8bf9Kh3_7J93yYcgi9GU14P57o',
-    authDomain: 'pizzahappyfamily-312.firebaseapp.com',
-    projectId: 'pizzahappyfamily-312',
-    storageBucket: 'pizzahappyfamily-312.firebasestorage.app',
-    messagingSenderId: '478245902761',
-    appId: '1:478245902761:web:063ac426f7243ea9a50cb8',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCDVjiNd8bf9Kh3_7J93yYcgi9GU14P57o',
-    appId: '1:478245902761:web:063ac426f7243ea9a50cb8',
-    messagingSenderId: '478245902761',
-    projectId: 'pizzahappyfamily-312',
-    storageBucket: 'pizzahappyfamily-312.firebasestorage.app',
+    apiKey: 'YOUR_ANDROID_API_KEY', // Replace with your Firebase API key
+    appId: 'YOUR_ANDROID_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_FIREBASE_PROJECT_ID',
+    databaseURL: 'https://YOUR_FIREBASE_PROJECT_ID.firebaseio.com',
+    storageBucket: 'YOUR_FIREBASE_PROJECT_ID.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCDVjiNd8bf9Kh3_7J93yYcgi9GU14P57o',
-    appId: '1:478245902761:web:063ac426f7243ea9a50cb8',
-    messagingSenderId: '478245902761',
-    projectId: 'pizzahappyfamily-312',
-    storageBucket: 'pizzahappyfamily-312.firebasestorage.app',
+    apiKey: 'YOUR_IOS_API_KEY', // Replace with your Firebase API key
+    appId: 'YOUR_IOS_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_FIREBASE_PROJECT_ID',
+    databaseURL: 'https://YOUR_FIREBASE_PROJECT_ID.firebaseio.com',
+    storageBucket: 'YOUR_FIREBASE_PROJECT_ID.appspot.com',
+    iosBundleId: 'com.example.pizzaApp',
   );
 }
+

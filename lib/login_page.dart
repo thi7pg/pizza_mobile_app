@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'main_navigation.dart';
+import 'services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,9 +20,22 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String _errorMessage = '';
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
   Future<void> _handleAuth() async {
+    if (_isLoading) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final fullName = _nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (!_isLogin && fullName.isEmpty)) {
+      setState(() {
+        _errorMessage = _isLogin
+            ? 'Please enter email and password.'
+            : 'Please fill name, email, and password.';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -28,50 +43,33 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       if (_isLogin) {
-        // Login
-        await _auth.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        // Sign in with backend API
+        final success = await ApiService.signIn(email, password);
+        if (!success) {
+          throw Exception('Invalid email or password.');
+        }
       } else {
-        // Register
-        await _auth.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-        await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
+        // Sign up with backend API
+        final success = await ApiService.signUp(email, password, fullName);
+        if (!success) {
+          throw Exception('Failed to create account.');
+        }
       }
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigation()),
+      );
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        switch (e.code) {
-          case 'user-not-found':
-            _errorMessage = 'No account found with this email.';
-            break;
-          case 'wrong-password':
-            _errorMessage = 'Wrong password. Please try again.';
-            break;
-          case 'email-already-in-use':
-            _errorMessage = 'This email is already registered.';
-            break;
-          case 'weak-password':
-            _errorMessage = 'Password must be at least 6 characters.';
-            break;
-          case 'invalid-email':
-            _errorMessage = 'Please enter a valid email.';
-            break;
-          default:
-            _errorMessage = e.message ?? 'Something went wrong.';
-        }
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -82,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 🍕 Top header
+            // Top header
             Container(
               width: double.infinity,
               height: _isLogin ? 280 : 240,
