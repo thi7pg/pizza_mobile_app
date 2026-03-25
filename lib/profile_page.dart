@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image_picker/image_picker.dart';
 import 'admin_page.dart';
 import 'login_page.dart';
 import 'models/customer_profile.dart';
@@ -17,7 +15,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ImagePicker _imagePicker = ImagePicker();
   CustomerProfile? _profile;
   bool _isLoading = true;
   bool _isUploadingImage = false;
@@ -262,90 +259,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _pickProfileImage() async {
-    final currentProfile = _profile;
-    if (currentProfile == null ||
-        !ApiService.isLoggedIn ||
-        _isUploadingImage) {
-      return;
-    }
-
-    try {
-      final pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-        maxWidth: 1200,
-      );
-
-      if (pickedFile == null) return;
-
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        compressFormat: ImageCompressFormat.jpg,
-        compressQuality: 80,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Profile Image',
-            toolbarColor: const Color(0xFFE53935),
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Profile Image',
-            aspectRatioLockEnabled: true,
-          ),
-          //ignore: use_build_context_synchronously
-          WebUiSettings(context: context, presentStyle: WebPresentStyle.dialog),
-        ],
-      );
-
-      if (croppedFile == null) return;
-
-      if (!mounted) return;
-      setState(() => _isUploadingImage = true);
-
-      // In local mode, we skip cloud upload and store only locally.
-      final updatedProfile = CustomerProfile(
-        userId: currentProfile.userId,
-        fullName: currentProfile.fullName,
-        email: currentProfile.email,
-        phone: currentProfile.phone,
-        address: currentProfile.address,
-        profileImageUrl: '',
-        profileImagePath: '',
-        profileImageData: '',
-      );
-
-      await ApiService.updateUserProfileData(
-        fullName: updatedProfile.fullName,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _profile = updatedProfile;
-        _isUploadingImage = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile image updated.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _isUploadingImage = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not update profile image: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   Future<void> _removeProfileImage() async {
     final currentProfile = _profile;
     if (currentProfile == null || _isUploadingImage) return;
@@ -450,17 +363,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_outlined,
-                  color: Color(0xFFE53935),
-                ),
-                title: const Text('Choose From Gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickProfileImage();
-                },
-              ),
               if (currentProfile.profileImageUrl.isNotEmpty ||
                   currentProfile.profileImageData.isNotEmpty)
                 ListTile(

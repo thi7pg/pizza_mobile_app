@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'models/db_product.dart';
 import 'services/api_service.dart';
 
 class ProductPage extends StatefulWidget {

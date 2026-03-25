@@ -9,8 +9,19 @@ let client;
 
 async function connectDB() {
   if (db) return;
+
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI is missing in environment/.env');
+  }
+  if (!MONGO_DB) {
+    throw new Error('MONGO_DB is missing in environment/.env');
+  }
+
   client = new MongoClient(MONGO_URI);
   await client.connect();
+
+  // Verify connectivity (auth, networking, TLS, etc.)
+  await client.db('admin').command({ ping: 1 });
 
   db = client.db(MONGO_DB);
   console.log('MongoDB connected:', MONGO_DB);

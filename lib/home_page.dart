@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'main_navigation.dart';
 import 'product_page.dart';
 
@@ -16,8 +15,6 @@ class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
   Timer? _bannerTimer;
   int _currentBanner = 0;
-  final String _tutorialVideoUrl =
-      'https://youtu.be/EJBoDM2d_HM?si=RSGMaePTXGFUn4EB';
 
   final List<Map<String, dynamic>> banners = [
     {
@@ -62,8 +59,8 @@ class _HomePageState extends State<HomePage> {
     {
       'name': 'កញ្ចប់បើក',
       'img': 'assets/products/remove/topping1.png',
-      'price': '\$3.75',
-      'khr': '15,150 ៛',
+      'price': '\$100',
+      'khr': '403,000 ៛',
     },
    
   ];
@@ -76,16 +73,6 @@ class _HomePageState extends State<HomePage> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ProductPage()),
-      );
-    }
-  }
-
-  Future<void> _openTutorialVideo() async {
-    final uri = Uri.parse(_tutorialVideoUrl);
-    final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
-    if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open tutorial video.')),
       );
     }
   }
@@ -351,66 +338,62 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: InkWell(
-                onTap: _openTutorialVideo,
-                borderRadius: BorderRadius.circular(18),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF202124), Color(0xFF2D2E33)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF202124), Color(0xFF2D2E33)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD62828),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 34,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD62828),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 34,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'របៀបកម្មង់ទំនិញដោយខ្លួនឯង',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'របៀបកម្មង់ទំនិញដោយខ្លួនឯង',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              'មើលមេរៀនរហ័ស: រុករកផលិតផល, បន្ថែមទៅកន្ត្រក, ដាក់បញ្ជាទិញ.',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12.5,
-                              ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'មើលមេរៀនរហ័ស: រុករកផលិតផល, បន្ថែមទៅកន្ត្រក, ដាក់បញ្ជាទិញ.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.open_in_new,
-                        color: Colors.white70,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.open_in_new,
+                      color: Colors.white70,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -499,7 +482,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            (product['price'] as String?) ?? 'ລາຄາមិនមាន',
+                            (product['price'] as String?) ?? 'មិនមាន',
                             style: const TextStyle(
                               color: Color(0xFFD62828),
                               fontWeight: FontWeight.w700,
